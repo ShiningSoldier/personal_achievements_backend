@@ -27,7 +27,14 @@ router.post('/store-day-data', function(req, res, next) {
         res.send(err);
       }
       );
+});
 
+router.post('/get-specific-day', function (req, res, next) {
+    const {dayNumber, monthNumber, year} = req.body;
+
+    db.days_collection.findOne({dayNumber: dayNumber, monthNumber: monthNumber, year: year}, function (err, doc) {
+        res.send(doc);
+    })
 });
 
 module.exports = router;
