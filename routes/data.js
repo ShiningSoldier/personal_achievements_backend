@@ -4,37 +4,16 @@ const router = express.Router();
 const mongojs = require('mongojs');
 const db = mongojs(process.env.MONGO_URL);
 const days_collection = db.collection('days');
+const dataController = require('../controllers/dataController');
 
 router.get('/', function(req, res, next) {
   res.send('respond with a resource');
 });
 
-router.post('/month-data', function(req, res, next) {
-  const {monthNumber, year} = req.body;
-  db.days_collection.find({monthNumber: monthNumber, year: year}, function (err, docs) {
-    res.send(docs);
-  });
-});
+router.post('/month-statistics', dataController.monthStatistics);
 
-router.post('/store-day-data', function(req, res, next) {
-  const {checked, dayNumber, monthNumber, year} = req.body;
+router.post('/store-day-data', dataController.storeDayData);
 
-  db.days_collection.update(
-      {dayNumber: dayNumber, monthNumber: monthNumber, year: year},
-      {$set: {dayNumber: dayNumber, monthNumber: monthNumber, year: year, checked: checked}},
-      {upsert: true},
-      function (err, docs) {
-        res.send(err);
-      }
-      );
-});
-
-router.post('/get-specific-day', function (req, res, next) {
-    const {dayNumber, monthNumber, year} = req.body;
-
-    db.days_collection.findOne({dayNumber: dayNumber, monthNumber: monthNumber, year: year}, function (err, doc) {
-        res.send(doc);
-    })
-});
+router.post('/get-specific-day', dataController.getSpecificDay);
 
 module.exports = router;
