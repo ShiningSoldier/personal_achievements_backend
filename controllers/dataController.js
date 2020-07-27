@@ -1,8 +1,11 @@
 require('dotenv').config();
 const express = require('express');
+const mongoose = require('mongoose');
+mongoose.connect(process.env.MONGO_URL, {useNewUrlParser: true});
 const mongojs = require('mongojs');
 const db = mongojs(process.env.MONGO_URL);
 const days_collection = db.collection('days');
+const Month = require('../models/monthModel');
 
 exports.monthStatistics = function (req, res) {
     const {year, monthNumber} = req.body;
@@ -18,7 +21,7 @@ exports.monthStatistics = function (req, res) {
         }
 
         if (countChecked === 0) {
-            statistics = "You're eating too much sugar. Try to eat less.";
+            statistics = "You eat too much sugar. Try to eat less.";
         } else if (countChecked > 0 && countChecked <= 15) {
             statistics = "Not so bad, but I'm pretty sure you can better!";
         } else if (countChecked < 28) {
@@ -32,21 +35,52 @@ exports.monthStatistics = function (req, res) {
 };
 
 exports.storeDayData = function(req, res) {
-    const {checked, dayNumber, monthNumber, year} = req.body;
-
-    db.days_collection.update(
-        {dayNumber: dayNumber, monthNumber: monthNumber, year: year},
-        {$set: {dayNumber: dayNumber, monthNumber: monthNumber, year: year, checked: checked}},
-        {upsert: true},
-        function (err, docs) {
-            res.send(err);
-        });
+    createOrUpdateMonth(req.body, res);
 };
+
+async function createOrUpdateMonth({checked, dayNumber, monthNumber, year}, res) {
+    const monthExists = Month.findOne({monthNumber: monthNumber, year: year}).exec(function (err, doc) {
+        let newDays = [];
+        let monthData;
+        if (doc) {
+            let existingDays = doc.days;
+            if (existingDays.includes(dayNumber)) {
+                newDays = existingDays.filter(function (value) {
+                    return value !== dayNumber;
+                });
+            } else {
+                existingDays.push(dayNumber);
+                newDays = existingDays;
+            }
+            doc.days = newDays;
+            doc.save(function (err, doc) {
+                res.send(err ? err : doc);
+            });
+        } else {
+            newDays = [dayNumber];
+            monthData = new Month({
+                year: year,
+                monthNumber: monthNumber,
+                days: newDays
+            });
+            monthData.save(function (err, doc) {
+                res.send(err ? err : doc);
+            });
+        }
+    });
+}
 
 exports.getSpecificDay = function (req, res) {
-    const {dayNumber, monthNumber, year} = req.body;
-
-    db.days_collection.findOne({dayNumber: dayNumber, monthNumber: monthNumber, year: year}, function (err, doc) {
-        res.send(doc);
-    })
+    findSpecificDayData(req.body, res);
 };
+
+async function findSpecificDayData({dayNumber, monthNumber, year}, res) {
+    let checked = 0;
+    Month.findOne({monthNumber: monthNumber, year: year, days: {$all: [dayNumber]}}).exec(function (err, doc) {
+        if (doc) {
+            checked = 1;
+        }
+
+        res.send({monthNumber: monthNumber, checked: checked});
+    })
+}
