@@ -2,9 +2,6 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 mongoose.connect(process.env.MONGO_URL, {useNewUrlParser: true});
-const mongojs = require('mongojs');
-const db = mongojs(process.env.MONGO_URL);
-const days_collection = db.collection('days');
 const Month = require('../models/monthModel');
 
 exports.getStatistics = async function({year, monthNumber}, res) {
@@ -32,7 +29,7 @@ exports.getStatistics = async function({year, monthNumber}, res) {
 
         res.send({statistics: statistics});
     });
-}
+};
 
 exports.createOrUpdateMonth = async function({checked, dayNumber, monthNumber, year}, res) {
     const monthExists = await Month.findOne({monthNumber: monthNumber, year: year}).exec(function (err, doc) {
