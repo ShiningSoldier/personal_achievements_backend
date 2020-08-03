@@ -1,5 +1,4 @@
 require('dotenv').config();
-const express = require('express');
 const mongoose = require('mongoose');
 mongoose.connect(process.env.MONGO_URL, {useNewUrlParser: true});
 const Month = require('../models/monthModel');
@@ -9,13 +8,7 @@ exports.getStatistics = async function({year, monthNumber}, res) {
         let countChecked = 0;
         let statistics;
 
-        if (docs.length > 0) {
-            docs.forEach(el => {
-                if (el.checked === 1) {
-                    countChecked = countChecked + el.checked;
-                }
-            });
-        }
+        countChecked = docs[0]._doc.days.length;
 
         if (countChecked === 0) {
             statistics = "You eat too much sugar. Try to eat less.";
